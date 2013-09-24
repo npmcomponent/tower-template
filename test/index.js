@@ -38,7 +38,7 @@ describe('template', function(){
 
   describe('data-scope', function(){
     it('should create a nested scope', function(){
-      assert(false === content.has('custom'));
+      assert(false === content.defined('custom'));
       
       content('custom')
         .attr('foo', 'string', 'Custom Scope Property!');

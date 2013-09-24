@@ -120,7 +120,8 @@ function compileEach(children) {
 }
 
 function compileDirectives(node, nodeFn) {
-  var directives = getDirectives(node);
+  var attrs = {};
+  var directives = getDirectives(node, attrs);
 
   if (!directives.length) return; // don't execute function if unnecessary.
 
@@ -140,7 +141,7 @@ function compileDirectives(node, nodeFn) {
   return directivesFn;
 }
 
-function getDirectives(node) {
+function getDirectives(node, attrs) {
   var directives = [];
 
   // https://developer.mozilla.org/en-US/docs/Web/API/Node.nodeType
@@ -148,7 +149,7 @@ function getDirectives(node) {
     case 1: // element node (visible tags plus <style>, <meta>)
       // first, appendDirective directive named after node, if it exists.
       appendDirective(node.nodeName.toLowerCase(), directives);
-      getDirectivesFromAttributes(node, directives);
+      getDirectivesFromAttributes(node, directives, attrs);
       break;
     case 3: // text node
       // node.nodeValue
@@ -163,7 +164,7 @@ function getDirectives(node) {
   return directives;
 }
 
-function getDirectivesFromAttributes(node, directives) {
+function getDirectivesFromAttributes(node, directives, attrs) {
   var attr;
   for (var i = 0, n = node.attributes.length; i < n; i++) {
     attr = node.attributes[i];
@@ -173,7 +174,9 @@ function getDirectivesFromAttributes(node, directives) {
     // http://www.w3schools.com/dom/prop_attr_specified.asp
     // XXX: don't know what this does.
     if (!attr.specified) continue;
-    appendDirective(attr.name, directives);
+    if (appendDirective(attr.name, directives)) {
+      //attrs[attr.name] = directives[directives.length - 1].compileExpression(attr.value);
+    }
   }
 }
 
@@ -181,12 +184,13 @@ function getDirectivesFromAttributes(node, directives) {
  * Add directive.
  *
  * @param {String} name The directive's name.
- * @param {String} directives The list of directives.
+ * @param {Array} directives The list of directives.
  */
 
 function appendDirective(name, directives) {
   if (directive.has(name)) {
     directives.push(directive(name));
+    return true;
   }
 }
 

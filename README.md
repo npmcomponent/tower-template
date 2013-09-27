@@ -36,6 +36,14 @@ open test/index.html
 
 - http://www.jspatterns.com/the-ridiculous-case-of-adding-a-script-element/
 
+```js
+directive('background', function(scope, el, attrs){
+  for (var i = 0, n = attrs.length; i < n; i++) {
+    attrs[i].watch(scope)
+  }
+});
+```
+
 ## License
 
 MIT

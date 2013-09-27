@@ -128,7 +128,7 @@ function compileDirectives(node, nodeFn) {
   var terminal = false;
   var fns = [];
   for (var i = 0, n = directives.length; i < n; i++) {
-    var fn = directives[i].compile(node, nodeFn);
+    var fn = directives[i].compile(node, nodeFn, attrs);
     fns.push(fn);
     terminal = directives[i]._terminal;
     if (terminal) break;
@@ -148,15 +148,14 @@ function getDirectives(node, attrs) {
   switch (node.nodeType) {
     case 1: // element node (visible tags plus <style>, <meta>)
       // first, appendDirective directive named after node, if it exists.
-      appendDirective(node.nodeName.toLowerCase(), directives);
-      getDirectivesFromAttributes(node, directives, attrs);
+      var obj = appendDirective(node.nodeName.toLowerCase(), 'element', directives);
+      getDirectivesFromAttributes(node, directives, attrs, obj);
       break;
     case 3: // text node
       // node.nodeValue
-      appendDirective('interpolation', directives);
+      appendDirective('interpolation', 'attribute', directives);
       break;
     case 8: // comment node
-      //
       break;
   }
 
@@ -164,7 +163,7 @@ function getDirectives(node, attrs) {
   return directives;
 }
 
-function getDirectivesFromAttributes(node, directives, attrs) {
+function getDirectivesFromAttributes(node, directives, attrs, elementDirective) {
   var attr;
   for (var i = 0, n = node.attributes.length; i < n; i++) {
     attr = node.attributes[i];
@@ -173,10 +172,13 @@ function getDirectivesFromAttributes(node, directives, attrs) {
     // and false if it's a default value in a DTD/Schema.
     // http://www.w3schools.com/dom/prop_attr_specified.asp
     // XXX: don't know what this does.
-    if (!attr.specified) continue;
-    if (appendDirective(attr.name, directives)) {
-      //attrs[attr.name] = directives[directives.length - 1].compileExpression(attr.value);
+    if (!attr.specified || attrs[attr.name]) continue;
+    if (appendDirective(attr.name, 'attribute', directives)) {
+      attrs[attr.name] = directives[directives.length - 1].compileExpression(attr.value);
+    } else if (elementDirective && elementDirective.hasAttribute(attr.name)) {
+      attrs[attr.name] = directives[directives.length - 1].compileExpressionForAttribute(attr.name, attr.value);
     }
+    // else, just a basic value
   }
 }
 
@@ -187,10 +189,11 @@ function getDirectivesFromAttributes(node, directives, attrs) {
  * @param {Array} directives The list of directives.
  */
 
-function appendDirective(name, directives) {
-  if (directive.has(name)) {
-    directives.push(directive(name));
-    return true;
+function appendDirective(name, type, directives) {
+  var obj = directive.collection[name];
+  if (obj && obj._types[type]) {
+    directives.push(obj);
+    return obj;
   }
 }
 

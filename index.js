@@ -229,9 +229,9 @@ function createDirectivesFn(fns) {
   function directivesFn(scope, node) {
     // if we've moved this node around, then
     // it should still have access to the original scope.
-    if (node.__scope__)
-      scope = node.__scope__;
-    
+    //if (node.__scope__)
+    //  scope = node.__scope__;
+
     for (i = 0; i < n; i++) {
       scope = fns[i](scope, node);
     }

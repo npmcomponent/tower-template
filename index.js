@@ -130,7 +130,7 @@ function compileDirectives(node, nodeFn) {
   for (var i = 0, n = directives.length; i < n; i++) {
     var fn = directives[i].compile(node, nodeFn, attrs);
     fns.push(fn);
-    terminal = directives[i]._terminal;
+    terminal = directives[i].terminal;
     if (terminal) break;
   }
 
@@ -191,7 +191,7 @@ function getDirectivesFromAttributes(node, directives, attrs, elementDirective) 
 
 function appendDirective(name, type, directives) {
   var obj = directive.collection[name];
-  if (obj && obj._types[type]) {
+  if (obj && obj.prototype._types[type]) {
     directives.push(obj);
     return obj;
   }
@@ -247,5 +247,5 @@ function createDirectivesFn(fns) {
  */
 
 function priority(a, b) {
-  return b._priority - a._priority;
+  return b.prototype.priority - a.prototype.priority;
 }

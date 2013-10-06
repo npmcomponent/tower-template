@@ -47,7 +47,7 @@ function template(name, node) {
  * @api public
  */
 
-exports.has = function(name){
+exports.defined = function(name){
   return !!exports.collection.hasOwnProperty(name);
 };
 
@@ -120,40 +120,38 @@ function compileEach(children) {
 }
 
 function compileDirectives(node, nodeFn) {
-  var attrs = {};
-  var directives = getDirectives(node, attrs);
-
+  var directives = getDirectives(node);
   if (!directives.length) return; // don't execute function if unnecessary.
 
   var terminal = false;
   var fns = [];
+
   for (var i = 0, n = directives.length; i < n; i++) {
-    var fn = directives[i].compile(node, nodeFn, attrs);
+    var fn = directives[i].compile(node, nodeFn);
     fns.push(fn);
     terminal = directives[i].terminal;
     if (terminal) break;
   }
 
   var directivesFn = createDirectivesFn(fns);
-
   directivesFn.terminal = terminal;
-
   return directivesFn;
 }
 
-function getDirectives(node, attrs) {
+function getDirectives(node) {
   var directives = [];
+  var attrs = {};
 
   // https://developer.mozilla.org/en-US/docs/Web/API/Node.nodeType
   switch (node.nodeType) {
     case 1: // element node (visible tags plus <style>, <meta>)
       // first, appendDirective directive named after node, if it exists.
-      var obj = appendDirective(node.nodeName.toLowerCase(), 'element', directives);
-      getDirectivesFromAttributes(node, directives, attrs, obj);
+      appendDirective(node.nodeName.toLowerCase(), 'element', node, directives);
+      appendAttributeDirectives(node, directives, attrs);
       break;
     case 3: // text node
       // node.nodeValue
-      appendDirective('interpolation', 'attribute', directives);
+      appendDirective('interpolation', 'attribute', directives, node);
       break;
     case 8: // comment node
       break;
@@ -163,22 +161,13 @@ function getDirectives(node, attrs) {
   return directives;
 }
 
-function getDirectivesFromAttributes(node, directives, attrs, elementDirective) {
+function appendAttributeDirectives(node, directives, attrs) {
   var attr;
   for (var i = 0, n = node.attributes.length; i < n; i++) {
     attr = node.attributes[i];
-    // The specified property returns true if the 
-    // attribute value is set in the document, 
-    // and false if it's a default value in a DTD/Schema.
     // http://www.w3schools.com/dom/prop_attr_specified.asp
-    // XXX: don't know what this does.
     if (!attr.specified || attrs[attr.name]) continue;
-    if (appendDirective(attr.name, 'attribute', directives)) {
-      attrs[attr.name] = directives[directives.length - 1].compileExpression(attr.value);
-    } else if (elementDirective && elementDirective.hasAttribute(attr.name)) {
-      attrs[attr.name] = directives[directives.length - 1].compileExpressionForAttribute(attr.name, attr.value);
-    }
-    // else, just a basic value
+    appendDirective(attr.name, 'attribute', node, directives, attrs);
   }
 }
 
@@ -189,11 +178,10 @@ function getDirectivesFromAttributes(node, directives, attrs, elementDirective) 
  * @param {Array} directives The list of directives.
  */
 
-function appendDirective(name, type, directives) {
-  var obj = directive.collection[name];
-  if (obj && obj.prototype._types[type]) {
-    directives.push(obj);
-    return obj;
+function appendDirective(name, type, node, directives, attrs) {
+  var Directive = directive.collection[name];
+  if (Directive && Directive.prototype[type]) {
+    directives.push(new Directive(node, attrs));
   }
 }
 

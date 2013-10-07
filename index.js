@@ -79,8 +79,30 @@ exports.defined = function(name){
 function compile(node, start) {
   // http://stackoverflow.com/questions/384286/javascript-isdom-how-do-you-check-if-a-javascript-object-is-a-dom-object
   // XXX: if node gets replaced here, needs to be reflected
+  // use nodeList[i] in case it gets compiled beneath
+  // XXX: therefore, it must always be on arrays
+  if (node.nodeType) {
+    // find nodeList and index;
+    var nodeList;
+    var index;
+    if (node.parentNode) {
+      nodeList = node.parentNode.childNodes;
+      for (var i = 0; i < nodeList.length; i++) {
+        if (node == nodeList[i]) {
+          index = i;
+          break;
+        }
+      }
+    } else {
+      var frag = document.createDocumentFragment();
+      frag.appendChild(node);
+      nodeList = frag.childNodes;
+      index = 0;
+    }
+  }
+
   var nodeFn = node.nodeType
-    ? compileNode(node, start)
+    ? compileNode(node, index, nodeList, start)
     : compileEach(node);
 
   function fn(scope, el) {
@@ -93,7 +115,8 @@ function compile(node, start) {
   return fn;
 }
 
-function compileNode(node, start) {
+// XXX: compileNode(node, nodeList, directiveIndex)
+function compileNode(node, index, nodeList, start) {
   var directivesFn = compileDirectives(node, nodeFn, start);
   var terminal = directivesFn && directivesFn.terminal;
   
@@ -125,12 +148,12 @@ function compileNode(node, start) {
   return nodeFn;
 }
 
-function compileEach(children) {
+function compileEach(nodeList) {
   var fns = [];
   // doesn't cache `length` b/c items can be removed
   //for (var i = 0, n = children.length; i < n; i++) {
-  for (var i = 0; i < children.length; i++) {
-    fns.push(compileNode(children[i]));
+  for (var i = 0; i < nodeList.length; i++) {
+    fns.push(compileNode(nodeList[i], i, nodeList));
   }
 
   return createEachFn(fns);
@@ -147,9 +170,10 @@ function compileDirectives(node, nodeFn, start) {
   for (var i = start || 0, n = directives.length; i < n; i++) {
     obj = directives[i];
 
+    // XXX: if obj.element
     if (obj.template) {
-      // XXX: replace <content> tags with the stuff from the current `node`.
       var templateEl = obj.templateEl.cloneNode(true);
+      // XXX: replace <content> tags with the stuff from the current `node`.
 
       if (obj.replace) {
         node.parentNode.replaceChild(templateEl, node);

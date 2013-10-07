@@ -220,12 +220,12 @@ function getDirectives(node, start) {
   switch (node.nodeType) {
     case 1: // element node (visible tags plus <style>, <meta>)
       // first, appendDirective directive named after node, if it exists.
-      appendDirective(node.nodeName.toLowerCase(), 'element', node, directives);
+      appendDirective(node.nodeName.toLowerCase(), 'element', node, directives, attrs);
       appendAttributeDirectives(node, directives, attrs);
       break;
     case 3: // text node
       // node.nodeValue
-      appendDirective('interpolation', 'attribute', directives, node);
+      appendDirective('interpolation', 'attribute', directives, node, attrs);
       break;
     case 8: // comment node
       break;

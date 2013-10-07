@@ -198,7 +198,7 @@ function compileDirectives(node, nodeFn, start) {
       // <profile data-each="user in users"></profile>
       // template(el, [ 'profile', 'data-each' ]);
       nodeFn = compile(node, i + 1);
-      node = comment;
+      //node = comment;
     }
 
     var fn = obj.compile(node, nodeFn);

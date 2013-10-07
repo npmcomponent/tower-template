@@ -13,10 +13,26 @@ var content = require('tower-content');
 exports = module.exports = template;
 
 /**
+ * Expose `compile`.
+ */
+
+exports.compile = compile;
+
+/**
  * Expose `collection`.
  */
 
 exports.collection = {};
+
+/**
+ * Expose `document`.
+ *
+ * For server-side use.
+ */
+
+exports.document = 'undefined' == typeof document
+  ? {} // XXX: tower/server-dom
+  : window.document;
 
 /**
  * Client-side reactive templates (just plain DOM node manipulation, no strings).
@@ -56,14 +72,15 @@ exports.defined = function(name){
  * and collect and execute directives.
  *
  * @param {HTMLNode} node
- * @param {Content} scope
+ * @param {Array} start Directives to start.
  * @return {Function} The compiled template function.
  */
 
-function compile(node) {
+function compile(node, start) {
   // http://stackoverflow.com/questions/384286/javascript-isdom-how-do-you-check-if-a-javascript-object-is-a-dom-object
+  // XXX: if node gets replaced here, needs to be reflected
   var nodeFn = node.nodeType
-    ? compileNode(node)
+    ? compileNode(node, start)
     : compileEach(node);
 
   function fn(scope, el) {
@@ -76,8 +93,8 @@ function compile(node) {
   return fn;
 }
 
-function compileNode(node) {
-  var directivesFn = compileDirectives(node, nodeFn);
+function compileNode(node, start) {
+  var directivesFn = compileDirectives(node, nodeFn, start);
   var terminal = directivesFn && directivesFn.terminal;
   
   // recursive
@@ -119,17 +136,50 @@ function compileEach(children) {
   return createEachFn(fns);
 }
 
-function compileDirectives(node, nodeFn) {
-  var directives = getDirectives(node);
+function compileDirectives(node, nodeFn, start) {
+  var directives = getDirectives(node, start);
   if (!directives.length) return; // don't execute function if unnecessary.
 
   var terminal = false;
   var fns = [];
+  var obj;
 
-  for (var i = 0, n = directives.length; i < n; i++) {
-    var fn = directives[i].compile(node, nodeFn);
+  for (var i = start || 0, n = directives.length; i < n; i++) {
+    obj = directives[i];
+
+    if (obj.template) {
+      // XXX: replace <content> tags with the stuff from the current `node`.
+      var templateEl = obj.templateEl.cloneNode(true);
+
+      if (obj.replace) {
+        node.parentNode.replaceChild(templateEl, node);
+        node = templateEl;
+        directives = directives.concat(getDirectives(node));
+        n = directives.length;
+        terminal = true;
+      } else {
+        node.appendChild(templateEl);
+      }
+    }
+
+    // meta node (such as `data-each` or `data-if`)
+    if (obj.meta) {
+      obj.terminal = true;
+      // you have to replace nodes, not remove them, to keep order.
+      var val = node.getAttribute(obj.name);
+      var comment = exports.document.createComment(' ' + obj.name + ':' + val + ' ');
+      if (node.parentNode)
+        node.parentNode.replaceChild(comment, node);
+      // XXX: should skip already processed directives
+      // <profile data-each="user in users"></profile>
+      // template(el, [ 'profile', 'data-each' ]);
+      nodeFn = compile(node, i + 1);
+      node = comment;
+    }
+
+    var fn = obj.compile(node, nodeFn);
     fns.push(fn);
-    terminal = directives[i].terminal;
+    terminal = obj.terminal;
     if (terminal) break;
   }
 
@@ -138,7 +188,7 @@ function compileDirectives(node, nodeFn) {
   return directivesFn;
 }
 
-function getDirectives(node) {
+function getDirectives(node, start) {
   var directives = [];
   var attrs = {};
 
@@ -235,5 +285,5 @@ function createDirectivesFn(fns) {
  */
 
 function priority(a, b) {
-  return b.prototype.priority - a.prototype.priority;
+  return b.priority - a.priority;
 }

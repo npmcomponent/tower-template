@@ -242,6 +242,8 @@ function appendAttributeDirectives(node, directives, attrs) {
     // http://www.w3schools.com/dom/prop_attr_specified.asp
     if (!attr.specified || attrs[attr.name]) continue;
     appendDirective(attr.name, 'attribute', node, directives, attrs);
+    // if the expression wasn't added
+    if (!attrs[attr.name]) attrs[attr.name] = attr.value;
   }
 }
 

@@ -282,6 +282,7 @@ function createEachFn(fns) {
       // XXX: not sure this is correct.
       // XXX: should pass in `children` and `i` instead,
       //      in case something is replaced
+      // if (current[i] !== children[i]) XXX: search for it, so we know the index
       fns[i](scope, current[i]);
     }
   }

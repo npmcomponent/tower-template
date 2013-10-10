@@ -220,8 +220,9 @@ function getDirectives(node, start) {
   switch (node.nodeType) {
     case 1: // element node (visible tags plus <style>, <meta>)
       // first, appendDirective directive named after node, if it exists.
-      appendDirective(node.nodeName.toLowerCase(), 'element', node, directives, attrs);
-      appendAttributeDirectives(node, directives, attrs);
+      var tag = node.nodeName.toLowerCase();
+      appendDirective(tag, 'element', node, directives, attrs);
+      appendAttributeDirectives(node, directives, attrs, tag);
       break;
     case 3: // text node
       // node.nodeValue
@@ -235,13 +236,13 @@ function getDirectives(node, start) {
   return directives;
 }
 
-function appendAttributeDirectives(node, directives, attrs) {
+function appendAttributeDirectives(node, directives, attrs, tag) {
   var attr;
   for (var i = 0, n = node.attributes.length; i < n; i++) {
     attr = node.attributes[i];
     // http://www.w3schools.com/dom/prop_attr_specified.asp
     if (!attr.specified || attrs[attr.name]) continue;
-    appendDirective(attr.name, 'attribute', node, directives, attrs);
+    appendDirective(attr.name, 'attribute', node, directives, attrs, tag);
     // if the expression wasn't added
     if (!attrs[attr.name]) attrs[attr.name] = attr.value;
   }
@@ -254,10 +255,12 @@ function appendAttributeDirectives(node, directives, attrs) {
  * @param {Array} directives The list of directives.
  */
 
-function appendDirective(name, type, node, directives, attrs) {
+function appendDirective(name, type, node, directives, attrs, tag) {
   var Directive = directive.collection[name];
   if (Directive && Directive.prototype[type]) {
-    directives.push(new Directive(node, attrs));
+    if (!tag || !Directive.tag || (tag === Directive.tag)) {
+      directives.push(new Directive(node, attrs)); 
+    }
   }
 }
 
@@ -270,9 +273,16 @@ function createEachFn(fns) {
   var n = fns.length, i;
 
   function eachFn(scope, children, returnNode) {
+    var current = [];
+    for (i = 0; i < n; i++) {
+      current.push(children[i]);
+    }
+
     for (i = 0; i < n; i++) {
       // XXX: not sure this is correct.
-      fns[i](scope, children[i]);
+      // XXX: should pass in `children` and `i` instead,
+      //      in case something is replaced
+      fns[i](scope, current[i]);
     }
   }
 

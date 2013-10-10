@@ -301,13 +301,14 @@ function createEachFn(fns) {
 function createDirectivesFn(fns) {
   var n = fns.length, i;
 
-  function directivesFn(scope, node) {
+  function directivesFn(scope, node, childNodes, i) {
     // if we've moved this node around, then
     // it should still have access to the original scope.
     if (node.__scope__)
       scope = node.__scope__;
     
     for (i = 0; i < n; i++) {
+      // XXX: instead of `node`, do something like `childNodes[i]`
       scope = fns[i](scope, node);
     }
 

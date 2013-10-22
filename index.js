@@ -232,8 +232,9 @@ function getDirectives(node, start) {
       break;
   }
 
-  if (directives.length) directives.sort(priority);
-  return directives;
+  return directives.length
+    ? directives.sort(priority)
+    : directives;
 }
 
 function appendAttributeDirectives(node, directives, attrs, tag) {

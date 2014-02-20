@@ -3,8 +3,8 @@
  * Module dependencies.
  */
 
-var directive = require('tower-directive');
-var content = require('tower-content');
+// commented out by npm-component: var directive = require('tower-directive');
+// commented out by npm-component: var content = require('tower-content');
 
 /**
  * Expose `template`.
